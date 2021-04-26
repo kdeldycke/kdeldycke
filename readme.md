@@ -29,14 +29,16 @@ thing. All by myself.
 developer](https://kevin.deldycke.com/2017/04/github-top-developer/), and [top-1% open-source
 developer](https://kevin.deldycke.com/2011/03/top-1-percent-open-source-developer/).
 
-- 🌟 14,000+ GitHub stars for my repository about [Falsehoods Programmers Believe
-in](https://github.com/kdeldycke/awesome-falsehood). Regularly [featured on HN front page](https://github.com/kdeldycke/awesome-falsehood/blob/main/assets/in-the-media.md).
+- 🌟 17,000+ GitHub stars collected on my repositories. The most popular being the one about [Falsehoods Programmers Believe
+in](https://github.com/kdeldycke/awesome-falsehood). It is regularly [featured on popular medias](https://github.com/kdeldycke/awesome-falsehood/blob/main/assets/in-the-media.md).
 
 - 💵 Wrote the [best open-source
 payroll](https://kevin.deldycke.com/2008/06/best-open-source-payroll-software/)
 software of the world.
 
 - 🌐 Created and managed the African subsidiary of my first employer.
+
+- 🛰 Have [code running on Mars](https://twitter.com/kdeldycke/status/1384862861210624005).
 
 
 ## More
