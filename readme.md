@@ -1,6 +1,6 @@
 <img align="right" src="https://github-readme-stats.vercel.app/api?username=kdeldycke&show_icons=true&text_color=718096&hide_title=true"/>
 
-My name is **Kevin Deldycke**, I'm a high-tech Engineering Manager from Paris, France.
+My name is **Kevin Deldycke**, I'm a high-tech Engineering Manager.
 
 
 ## Short Bio
