@@ -47,3 +47,5 @@ software of the world.
 
 * [Interviews](https://kevin.deldycke.com/about/#interviews)
 * [LinkedIn resume](https://www.linkedin.com/in/kevindeldycke/)
+
+![Metrics](https://metrics.lecoq.io/kdeldycke?template=classic&base.header=0&base.activity=0&base.community=0&base.repositories=0&base.metadata=0&achievements=1&notable=1&achievements.threshold=C&achievements.secrets=true&achievements.display=detailed&achievements.limit=7&achievements.ignored=member%2C%20forker%2C%20stargazer&notable.from=all&notable.repositories=true&notable.indepth=true&notable.types=commit&config.display=columns)
