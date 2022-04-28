@@ -42,6 +42,7 @@ software of the world.
 
 - 🛰 Have [code running on Mars](https://twitter.com/kdeldycke/status/1384862861210624005).
 
+- 🤡 Wasted [6 years solving an XKCD joke](https://github.com/kdeldycke/meta-package-manager#readme).
 
 ## More
 
