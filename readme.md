@@ -31,7 +31,7 @@ thing. All by myself.
 developer](https://kevin.deldycke.com/2017/04/github-top-developer/), and [top-1% open-source
 developer](https://kevin.deldycke.com/2011/03/top-1-percent-open-source-developer/).
 
-- 🌟 [21,000+ GitHub stars](https://github.com/kdeldycke/kdeldycke/blob/main/awesome-stats.md) collected on my repositories. The most popular being the one about [Falsehoods Programmers Believe
+- 🌟 [21,000+ GitHub stars](https://gitstar-ranking.com/kdeldycke). The most popular repository being the [Falsehoods Programmers Believe
 in](https://github.com/kdeldycke/awesome-falsehood). It is regularly [featured on popular media](https://github.com/kdeldycke/awesome-falsehood/blob/main/assets/in-the-media.md).
 
 - 💵 Wrote the [best open-source
