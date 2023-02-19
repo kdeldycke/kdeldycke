@@ -1,7 +1,5 @@
 <img align="right" src="https://github-readme-stats.vercel.app/api?username=kdeldycke&show_icons=true&text_color=718096&hide_title=true"/>
 
-<a href="https://sourcekarma.vercel.app/kdeldycke"><img align="right" src="https://sourcekarma-og.vercel.app/api/kdeldycke/github"/></a>
-
 My name is **Kevin Deldycke**, I'm a high-tech Engineering Manager.
 
 
