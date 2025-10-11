@@ -1,6 +1,6 @@
-<img align="right" src="https://github-readme-stats.vercel.app/api?username=kdeldycke&show_icons=true&text_color=718096&hide_title=true"/>
+<img align="right" src="https://github-readme-stats.vercel.app/api?username=kdeldycke&show_icons=true&text_color=718096&hide_title=true&rank_icon=percentile"/>
 
-My name is **Kevin Deldycke**, I'm a high-tech Engineering Manager.
+My name is **Kevin Deldycke**, I'm a tech Engineering Manager.
 
 
 ## Short Bio
@@ -42,9 +42,8 @@ software in the world.
 
 - 🤡 Wasted [6 years solving an XKCD joke](https://github.com/kdeldycke/meta-package-manager#readme).
 
+
 ## More
 
 * [Interviews](https://kevin.deldycke.com/about/#interviews)
 * [LinkedIn resume](https://www.linkedin.com/in/kevindeldycke/)
-
-![Metrics](https://metrics.lecoq.io/kdeldycke?template=classic&base.header=0&base.activity=0&base.community=0&base.repositories=0&base.metadata=0&achievements=1&notable=1&achievements.threshold=C&achievements.secrets=true&achievements.display=detailed&achievements.limit=7&achievements.ignored=member%2C%20forker%2C%20stargazer&notable.from=all&notable.repositories=true&notable.indepth=true&notable.types=commit&config.display=columns)
