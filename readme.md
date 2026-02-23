@@ -1,4 +1,4 @@
-<img align="right" src="https://github-readme-stats.vercel.app/api?username=kdeldycke&show_icons=true&text_color=718096&hide_title=true&rank_icon=percentile"/>
+<img align="right" src="./profile/stats.svg"/>
 
 My name is **Kevin Deldycke**, I'm a tech Engineering Manager.
 
