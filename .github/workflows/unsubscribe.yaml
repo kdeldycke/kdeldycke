@@ -54,7 +54,7 @@ jobs:
           # Check the request succeeded
           if echo "$status" | grep -q "^HTTP/.* [45]"; then
             # Extract the error message from the JSON body (after the blank line separating headers from body)
-            message=$(echo "$response" | sed -n '/^\r*$/,$ p' | tail -n +2 | jq -r '.message // empty' 2>/dev/null)
+            message=$(echo "$response" | sed -n '/^\r*$/,$ p' | tail -n +2 | jq -r '.message // empty' 2>/dev/null || true)
             echo "::error::NOTIFICATION_TOKEN cannot access the notifications API (${status})."
             if [ -n "$message" ]; then
               echo "::error::GitHub says: $message"
