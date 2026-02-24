@@ -108,40 +108,57 @@ jobs:
           # Write table rows to a temp file (counters don't survive the pipe subshell)
           rows=$(mktemp)
 
-          # Fetch all notification threads, select Issues and PRs, then
-          # reverse to process oldest first.
-          # Note: the API has no server-side filter for issue/PR state or sort
-          # direction. The "before" parameter filters by *notification* update
-          # time, not the underlying issue's, so we filter client-side instead.
+          # Fetch all notification threads, then filter to Issues and PRs.
+          # The API has no server-side filter for issue/PR state or sort
+          # direction; the "before" parameter filters by *notification* update
+          # time, not the underlying issue's, so all filtering happens
+          # client-side.
+          echo "::group::Fetching all notification threads..."
+          threads=$(mktemp)
           gh api --method GET /notifications --paginate \
-            -f all=true -f per_page=20 | \
-            jq -c '[.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' | \
-            while IFS= read -r thread; do
-              id=$(echo "$thread" | jq -r '.id')
-              url=$(echo "$thread" | jq -r '.subject.url')
-              title=$(echo "$thread" | jq -r '.subject.title')
-              repo=$(echo "$thread" | jq -r '.repository.full_name')
-              type=$(echo "$thread" | jq -r '.subject.type')
+            -f all=true -f per_page=50 | \
+            jq -c '[.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' \
+            > "$threads"
+          total=$(wc -l < "$threads" | tr -d ' ')
+          echo "Found $total issue/PR notification threads to inspect."
+          echo "::endgroup::"
 
-              # Fetch issue/PR state and last activity date
-              data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at}' 2>/dev/null || echo '{}')
-              state=$(echo "$data" | jq -r '.state // "unknown"')
-              updated_at=$(echo "$data" | jq -r '.updated_at // empty')
+          n=0
+          while IFS= read -r thread; do
+            n=$((n + 1))
+            id=$(echo "$thread" | jq -r '.id')
+            url=$(echo "$thread" | jq -r '.subject.url')
+            title=$(echo "$thread" | jq -r '.subject.title')
+            repo=$(echo "$thread" | jq -r '.repository.full_name')
+            type=$(echo "$thread" | jq -r '.subject.type')
 
-              # Match closed threads inactive past the cutoff
-              if [ "$state" = "closed" ] && [ -n "$updated_at" ] && [ "$updated_at" \< "$cutoff" ]; then
-                if [ "$DRY_RUN" = "true" ]; then
-                  echo "🔍 $repo - $title (last activity: $updated_at)"
-                  echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
-                elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
-                  echo "✅ $repo - $title (last activity: $updated_at)"
-                  echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
-                else
-                  echo "❌ $repo - $title (last activity: $updated_at)"
-                  echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
-                fi
+            echo "[$n/$total] Checking $repo - $title..."
+
+            # Fetch issue/PR state and last activity date
+            data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at}' 2>/dev/null || echo '{}')
+            state=$(echo "$data" | jq -r '.state // "unknown"')
+            updated_at=$(echo "$data" | jq -r '.updated_at // empty')
+
+            # Match closed threads inactive past the cutoff
+            if [ "$state" = "closed" ] && [ -n "$updated_at" ] && [ "$updated_at" \< "$cutoff" ]; then
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "  → 🔍 candidate (closed, last activity: $updated_at)"
+                echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
+              elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
+                echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
+                echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
+              else
+                echo "  → ❌ failed (closed, last activity: $updated_at)"
+                echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
               fi
-            done
+            else
+              echo "  → skipped (state=$state)"
+            fi
+          done < "$threads"
+          rm -f "$threads"
+
+          echo "---"
+          echo "Inspected $n threads."
 
           # Append rows and stats to the summary
           cat "$rows" >> "$GITHUB_STEP_SUMMARY"
