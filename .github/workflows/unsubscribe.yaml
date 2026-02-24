@@ -1,0 +1,53 @@
+# Unsubscribes from notification threads of closed issues and pull requests.
+# Requires a classic personal access token with "notifications" scope stored
+# as NOTIFICATION_TOKEN repository secret.
+name: 🔕 Unsubscribe Closed Threads
+"on":
+  schedule:
+    # Run weekly, every Monday at 9:13 UTC.
+    - cron: "13 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      months:
+        description: "Unsubscribe from closed issues/PRs inactive for more than this many months"
+        default: "6"
+        type: string
+
+jobs:
+  unsubscribe:
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check NOTIFICATION_TOKEN
+        run: >
+          ${{ secrets.NOTIFICATION_TOKEN
+          && 'true'
+          || 'echo "::error::NOTIFICATION_TOKEN secret is not set.
+          Create a classic Personal Access Token with the notifications scope
+          and add it as a repository secret named NOTIFICATION_TOKEN."' }}
+      - name: Unsubscribe from closed issues and PRs
+        env:
+          GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
+          MONTHS: ${{ inputs.months || '6' }}
+        run: |
+          cutoff=$(date -u -d "${MONTHS} months ago" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Cutoff date: $cutoff (inactive for more than ${MONTHS} months)"
+
+          gh api /notifications --paginate -f all=true | \
+            jq -c '.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")' | \
+            while IFS= read -r thread; do
+              id=$(echo "$thread" | jq -r '.id')
+              url=$(echo "$thread" | jq -r '.subject.url')
+              title=$(echo "$thread" | jq -r '.subject.title')
+              repo=$(echo "$thread" | jq -r '.repository.full_name')
+
+              # Fetch issue/PR state and last activity date
+              data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at}' 2>/dev/null || echo '{}')
+              state=$(echo "$data" | jq -r '.state // "unknown"')
+              updated_at=$(echo "$data" | jq -r '.updated_at // empty')
+
+              # Unsubscribe if closed and inactive past the cutoff
+              if [ "$state" = "closed" ] && [ -n "$updated_at" ] && [ "$updated_at" \< "$cutoff" ]; then
+                echo "Unsubscribing: $repo - $title (last activity: $updated_at)"
+                gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null || true
+              fi
+            done
