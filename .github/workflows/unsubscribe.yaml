@@ -17,7 +17,7 @@ name: 🔕 Unsubscribe closed threads
         type: string
       batch-size:
         description: "Max threads to inspect per run (backlog clears over successive runs)"
-        default: "100"
+        default: "200"
         type: string
       dry-run:
         description: "Only list candidates without unsubscribing"
@@ -138,6 +138,7 @@ jobs:
           echo "::endgroup::"
 
           n=0
+          oldest_updated=""
           while IFS= read -r thread; do
             n=$((n + 1))
             id=$(echo "$thread" | jq -r '.id')
@@ -152,6 +153,13 @@ jobs:
             data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at}' 2>/dev/null || echo '{}')
             state=$(echo "$data" | jq -r '.state // "unknown"')
             updated_at=$(echo "$data" | jq -r '.updated_at // empty')
+
+            # Track the oldest activity date seen across all processed threads
+            if [ -n "$updated_at" ]; then
+              if [ -z "$oldest_updated" ] || [ "$updated_at" \< "$oldest_updated" ]; then
+                oldest_updated="$updated_at"
+              fi
+            fi
 
             # Match closed threads inactive past the cutoff
             if [ "$state" != "closed" ]; then
@@ -193,6 +201,16 @@ jobs:
             if [ "$remaining" -gt 0 ]; then
               echo ""
               echo "**Backlog:** $remaining threads remaining (will be processed in future runs)"
+            fi
+            if [ -n "$oldest_updated" ] && [ "$remaining" -gt 0 ] \
+                && { [ "$oldest_updated" \> "$cutoff" ] || [ "$oldest_updated" = "$cutoff" ]; }; then
+              echo ""
+              echo "> [!WARNING]"
+              echo "> Oldest activity seen in this batch: \`$oldest_updated\` (cutoff: \`$cutoff\`)."
+              echo "> The notification API does not sort by issue activity, so the current"
+              echo "> batch of $total threads did not reach any old-enough candidates."
+              echo "> Consider increasing \`batch-size\` (currently $BATCH_SIZE) or running manually"
+              echo "> with a larger batch to clear the backlog faster."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
