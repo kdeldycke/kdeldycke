@@ -17,7 +17,7 @@ name: 🔕 Unsubscribe closed threads
         type: string
       batch-size:
         description: "Max threads to inspect per run (backlog clears over successive runs)"
-        default: "200"
+        default: "300"
         type: string
       dry-run:
         description: "Only list candidates without unsubscribing"
@@ -89,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '6' }}
-          BATCH_SIZE: ${{ inputs.batch-size || '200' }}
+          BATCH_SIZE: ${{ inputs.batch-size || '300' }}
           DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
         run: |
           set -o pipefail
