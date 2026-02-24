@@ -1,4 +1,4 @@
-name: Readme Stats
+name: 📈 Readme Stats
 on:
   # Update daily.
   schedule:

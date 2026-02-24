@@ -1,6 +1,6 @@
 # Locks closed issues and pull requests after a period of inactivity, to
 # prevent spam and noise.
-name: Autolock
+name: 🔒 Autolock
 "on":
   schedule:
     # Run weekly, every Monday at 8:43.
