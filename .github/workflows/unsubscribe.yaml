@@ -108,11 +108,13 @@ jobs:
           # Write table rows to a temp file (counters don't survive the pipe subshell)
           rows=$(mktemp)
 
-          # Fetch notifications not updated since the cutoff (server-side pre-filter),
-          # select Issues and PRs, then reverse to process oldest first.
-          # The API has no sort parameter; it always returns newest first.
+          # Fetch all notification threads, select Issues and PRs, then
+          # reverse to process oldest first.
+          # Note: the API has no server-side filter for issue/PR state or sort
+          # direction. The "before" parameter filters by *notification* update
+          # time, not the underlying issue's, so we filter client-side instead.
           gh api --method GET /notifications --paginate \
-            -f all=true -f per_page=20 -f "before=$cutoff" | \
+            -f all=true -f per_page=20 | \
             jq -c '[.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' | \
             while IFS= read -r thread; do
               id=$(echo "$thread" | jq -r '.id')
