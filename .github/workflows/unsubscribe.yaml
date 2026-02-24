@@ -17,7 +17,7 @@ name: 🔕 Unsubscribe closed threads
         type: string
       batch-size:
         description: "Max threads to inspect per run (backlog clears over successive runs)"
-        default: "400"
+        default: "200"
         type: string
       dry-run:
         description: "Only list candidates without unsubscribing"
@@ -89,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '3' }}
-          BATCH_SIZE: ${{ inputs.batch-size || '400' }}
+          BATCH_SIZE: ${{ inputs.batch-size || '200' }}
           DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
         run: |
           set -o pipefail
@@ -100,14 +100,11 @@ jobs:
             mode="live"
           fi
 
-          # Write report header
+          # Write report header (results section is appended after processing)
           {
             echo "## 🔕 Unsubscribe report ($mode)"
             echo ""
             echo "Cutoff: \`$cutoff\` (inactive for more than ${MONTHS} months)"
-            echo ""
-            echo "| 📦 Repository | 🏷️ Type | 📝 Title | 🕐 Last activity | 📊 Status |"
-            echo "| --- | --- | --- | --- | --- |"
           } > "$GITHUB_STEP_SUMMARY"
 
           # Write table rows to a temp file (counters don't survive the pipe subshell)
@@ -154,10 +151,12 @@ jobs:
 
             echo "[$n/$total] Checking $repo - $title..."
 
-            # Fetch issue/PR state and last activity date
-            data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at}' 2>/dev/null || echo '{}')
+            # Fetch issue/PR state, last activity date, and web URL
+            data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at, html_url: .html_url, number: .number}' 2>/dev/null || echo '{}')
             state=$(echo "$data" | jq -r '.state // "unknown"')
             updated_at=$(echo "$data" | jq -r '.updated_at // empty')
+            html_url=$(echo "$data" | jq -r '.html_url // empty')
+            number=$(echo "$data" | jq -r '.number // empty')
 
             # Track oldest and newest activity dates
             if [ -n "$updated_at" ]; then
@@ -181,15 +180,23 @@ jobs:
               echo "  → skipped (closed, but active: $updated_at > cutoff $cutoff)"
             else
               count_closed_stale=$((count_closed_stale + 1))
+              link="$title"
+              if [ -n "$html_url" ]; then
+                link="[$title]($html_url)"
+              fi
+              ref="$repo"
+              if [ -n "$number" ] && [ -n "$html_url" ]; then
+                ref="[\`${repo}#${number}\`]($html_url)"
+              fi
               if [ "$DRY_RUN" = "true" ]; then
                 echo "  → 🔍 candidate (closed, last activity: $updated_at)"
-                echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
+                echo "| $link | $ref | $updated_at | 🔍 dry-run |" >> "$rows"
               elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
                 echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
-                echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
+                echo "| $link | $ref | $updated_at | ✅ |" >> "$rows"
               else
                 echo "  → ❌ failed (closed, last activity: $updated_at)"
-                echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
+                echo "| $link | $ref | $updated_at | ❌ |" >> "$rows"
               fi
             fi
           done < "$threads"
@@ -198,22 +205,35 @@ jobs:
           echo "---"
           echo "Inspected $n threads."
 
-          # Append rows and stats to the summary
-          cat "$rows" >> "$GITHUB_STEP_SUMMARY"
+          # Append results, then table, then stats to the summary
           found=$(wc -l < "$rows" 2>/dev/null || echo 0)
           {
-            echo ""
-            echo "---"
             echo ""
             echo "### 📋 Results"
             echo ""
             if [ "$DRY_RUN" = "true" ]; then
               echo "🔍 **Candidates found:** $found (dry-run, no changes made)"
             else
-              unsubscribed=$(grep -c '✅' "$rows" 2>/dev/null || echo 0)
-              failed=$(grep -c '❌' "$rows" 2>/dev/null || echo 0)
+              unsubscribed=$(grep -c '✅' "$rows" || true)
+              failed=$(grep -c '❌' "$rows" || true)
               echo "✅ **Unsubscribed:** $unsubscribed | ❌ **Failed:** $failed"
             fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$found" -gt 0 ]; then
+            {
+              echo ""
+              echo "### 📝 Details"
+              echo ""
+              echo "| 📝 Title | 📦 Repository | 🕐 Last activity | 📊 Status |"
+              echo "| --- | --- | --- | --- |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            cat "$rows" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          {
+            echo ""
+            echo "---"
             echo ""
             echo "### 📊 Batch details"
             echo ""
