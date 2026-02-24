@@ -4,8 +4,8 @@
 name: 🔕 Unsubscribe closed threads
 "on":
   schedule:
-    # TODO: restore weekly schedule: "13 9 * * 1"
-    - cron: "13 * * * *"
+    # Run weekly, every Monday at 9:13 UTC.
+    - cron: "13 9 * * 1"
   push:
     branches: ["main"]
     paths: [".github/workflows/unsubscribe.yaml"]
