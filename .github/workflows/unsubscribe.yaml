@@ -139,6 +139,11 @@ jobs:
 
           n=0
           oldest_updated=""
+          newest_updated=""
+          count_open=0
+          count_closed_recent=0
+          count_closed_stale=0
+          count_unknown=0
           while IFS= read -r thread; do
             n=$((n + 1))
             id=$(echo "$thread" | jq -r '.id')
@@ -154,29 +159,38 @@ jobs:
             state=$(echo "$data" | jq -r '.state // "unknown"')
             updated_at=$(echo "$data" | jq -r '.updated_at // empty')
 
-            # Track the oldest activity date seen across all processed threads
+            # Track oldest and newest activity dates
             if [ -n "$updated_at" ]; then
               if [ -z "$oldest_updated" ] || [ "$updated_at" \< "$oldest_updated" ]; then
                 oldest_updated="$updated_at"
               fi
+              if [ -z "$newest_updated" ] || [ "$updated_at" \> "$newest_updated" ]; then
+                newest_updated="$updated_at"
+              fi
             fi
 
             # Match closed threads inactive past the cutoff
-            if [ "$state" != "closed" ]; then
+            if [ "$state" = "unknown" ] || [ -z "$updated_at" ]; then
+              count_unknown=$((count_unknown + 1))
               echo "  → skipped (state=$state)"
-            elif [ -z "$updated_at" ]; then
-              echo "  → skipped (closed, no activity date)"
+            elif [ "$state" != "closed" ]; then
+              count_open=$((count_open + 1))
+              echo "  → skipped (state=$state)"
             elif [ "$updated_at" \> "$cutoff" ] || [ "$updated_at" = "$cutoff" ]; then
+              count_closed_recent=$((count_closed_recent + 1))
               echo "  → skipped (closed, but active: $updated_at > cutoff $cutoff)"
-            elif [ "$DRY_RUN" = "true" ]; then
-              echo "  → 🔍 candidate (closed, last activity: $updated_at)"
-              echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
-            elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
-              echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
-              echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
             else
-              echo "  → ❌ failed (closed, last activity: $updated_at)"
-              echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
+              count_closed_stale=$((count_closed_stale + 1))
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "  → 🔍 candidate (closed, last activity: $updated_at)"
+                echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
+              elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
+                echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
+                echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
+              else
+                echo "  → ❌ failed (closed, last activity: $updated_at)"
+                echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
+              fi
             fi
           done < "$threads"
           rm -f "$threads"
@@ -191,6 +205,8 @@ jobs:
             echo ""
             echo "---"
             echo ""
+            echo "### Results"
+            echo ""
             if [ "$DRY_RUN" = "true" ]; then
               echo "**Candidates found:** $found (dry-run, no changes made)"
             else
@@ -198,10 +214,27 @@ jobs:
               failed=$(grep -c '❌' "$rows" 2>/dev/null || echo 0)
               echo "**Unsubscribed:** $unsubscribed | **Failed:** $failed"
             fi
-            if [ "$remaining" -gt 0 ]; then
-              echo ""
-              echo "**Backlog:** $remaining threads remaining (will be processed in future runs)"
-            fi
+            echo ""
+            echo "### Batch details"
+            echo ""
+            echo "| Metric | Value |"
+            echo "| --- | --- |"
+            echo "| Total notifications | $all_total |"
+            echo "| Batch size | $BATCH_SIZE |"
+            echo "| Inspected | $n |"
+            echo "| Remaining backlog | $remaining |"
+            echo "| Oldest activity | ${oldest_updated:--} |"
+            echo "| Newest activity | ${newest_updated:--} |"
+            echo "| Cutoff | $cutoff |"
+            echo ""
+            echo "### Breakdown by state"
+            echo ""
+            echo "| State | Count |"
+            echo "| --- | --- |"
+            echo "| Open | $count_open |"
+            echo "| Closed (active since cutoff) | $count_closed_recent |"
+            echo "| Closed (inactive, eligible) | $count_closed_stale |"
+            echo "| Unknown | $count_unknown |"
             if [ -n "$oldest_updated" ] && [ "$remaining" -gt 0 ] \
                 && { [ "$oldest_updated" \> "$cutoff" ] || [ "$oldest_updated" = "$cutoff" ]; }; then
               echo ""
