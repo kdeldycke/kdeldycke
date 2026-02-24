@@ -106,15 +106,15 @@ jobs:
           # Write table rows to a temp file (counters don't survive the pipe subshell)
           rows=$(mktemp)
 
-          # Fetch all notification threads, then filter to Issues and PRs.
+          # Fetch unread notification threads, then filter to Issues and PRs.
+          # Only unread threads are fetched (no all=true) so that threads
+          # marked as read after unsubscribing don't reappear in future runs.
           # The API has no server-side filter for issue/PR state or sort
-          # direction; the "before" parameter filters by *notification* update
-          # time, not the underlying issue's, so all filtering happens
-          # client-side.
+          # direction, so all filtering happens client-side.
           echo "::group::Fetching notification threads..."
           all_threads=$(mktemp)
           gh api --method GET /notifications --paginate \
-            -f all=true -f per_page=50 | \
+            -f per_page=50 | \
             jq -c --slurp '[.[][] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' \
             > "$all_threads"
           all_total=$(wc -l < "$all_threads" | tr -d ' ')
@@ -188,6 +188,8 @@ jobs:
                 echo "  → 🔍 candidate (closed, last activity: $updated_at)"
                 echo "| $title | $ref | $ago | 👁️ Dry-run |" >> "$rows"
               elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
+                # Mark as read so the thread won't appear in future runs
+                gh api "/notifications/threads/$id" -X PATCH 2>/dev/null || true
                 echo "  → 🔕 unsubscribed (closed, last activity: $updated_at)"
                 echo "| $title | $ref | $ago | 🔕 Unsubscribed |" >> "$rows"
               else
