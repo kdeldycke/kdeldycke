@@ -20,7 +20,7 @@ name: 🔕 Unsubscribe closed threads
         default: "200"
         type: string
       dry-run:
-        description: "Only list candidates without unsubscribing"
+        description: "Dry-run: only list candidates, do not perform unsubscribing"
         default: true
         type: boolean
 
