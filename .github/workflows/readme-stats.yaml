@@ -1,8 +1,8 @@
-name: 📈 Readme Stats
+name: 📈 Readme stats
 on:
-  # Update daily.
+  # Update weekly, every Monday at 3:00 UTC.
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "0 3 * * 1"
   workflow_dispatch:
   push: {branches: ["main"]}
 
