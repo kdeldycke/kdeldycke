@@ -154,19 +154,21 @@ jobs:
             updated_at=$(echo "$data" | jq -r '.updated_at // empty')
 
             # Match closed threads inactive past the cutoff
-            if [ "$state" = "closed" ] && [ -n "$updated_at" ] && [ "$updated_at" \< "$cutoff" ]; then
-              if [ "$DRY_RUN" = "true" ]; then
-                echo "  → 🔍 candidate (closed, last activity: $updated_at)"
-                echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
-              elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
-                echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
-                echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
-              else
-                echo "  → ❌ failed (closed, last activity: $updated_at)"
-                echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
-              fi
-            else
+            if [ "$state" != "closed" ]; then
               echo "  → skipped (state=$state)"
+            elif [ -z "$updated_at" ]; then
+              echo "  → skipped (closed, no activity date)"
+            elif [ "$updated_at" \> "$cutoff" ] || [ "$updated_at" = "$cutoff" ]; then
+              echo "  → skipped (closed, but active: $updated_at > cutoff $cutoff)"
+            elif [ "$DRY_RUN" = "true" ]; then
+              echo "  → 🔍 candidate (closed, last activity: $updated_at)"
+              echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
+            elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
+              echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
+              echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
+            else
+              echo "  → ❌ failed (closed, last activity: $updated_at)"
+              echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
             fi
           done < "$threads"
           rm -f "$threads"
