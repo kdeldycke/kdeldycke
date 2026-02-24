@@ -6,6 +6,9 @@ name: 🔕 Unsubscribe closed threads
   schedule:
     # Run weekly, every Monday at 9:13 UTC.
     - cron: "13 9 * * 1"
+  push:
+    branches: ["main"]
+    paths: [".github/workflows/unsubscribe.yaml"]
   workflow_dispatch:
     inputs:
       months:
