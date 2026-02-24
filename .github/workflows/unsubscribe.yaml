@@ -26,8 +26,10 @@ jobs:
           ${{ secrets.NOTIFICATION_TOKEN
           && 'true'
           || 'echo "::error::NOTIFICATION_TOKEN secret is not set.
-          Create a classic Personal Access Token with the notifications scope
-          and add it as a repository secret named NOTIFICATION_TOKEN."; exit 1' }}
+          Create a classic PAT at https://github.com/settings/tokens/new?scopes=notifications
+          then add it at https://github.com/${{ github.repository }}/settings/secrets/actions
+          as a repository secret named NOTIFICATION_TOKEN.
+          Fine-grained PATs are not supported (the notifications API requires a classic PAT)."; exit 1' }}
 
       - name: Validate token permissions
         env:
@@ -44,22 +46,27 @@ jobs:
           status=$(echo "$response" | head -1)
           echo "HTTP status line: $status"
 
+          # X-OAuth-Scopes header reveals the token's granted scopes.
+          # Classic PATs always include this header; fine-grained PATs never do.
+          scopes=$(echo "$response" | grep -i '^x-oauth-scopes:' | sed 's/^[^:]*: *//' | tr -d '\r\n')
+          echo "X-OAuth-Scopes: '${scopes:-<not present>}'"
+
           # Check the request succeeded
           if echo "$status" | grep -q "^HTTP/.* [45]"; then
-            # Extract the error message from the JSON body (after the blank line)
-            body=$(echo "$response" | sed -n '/^$/,$ p' | tail -n +2)
-            message=$(echo "$body" | jq -r '.message // empty' 2>/dev/null)
+            # Extract the error message from the JSON body (after the blank line separating headers from body)
+            message=$(echo "$response" | sed -n '/^\r*$/,$ p' | tail -n +2 | jq -r '.message // empty' 2>/dev/null)
             echo "::error::NOTIFICATION_TOKEN cannot access the notifications API (${status})."
             if [ -n "$message" ]; then
               echo "::error::GitHub says: $message"
             fi
-            echo "::error::Ensure the token is a classic PAT with the 'notifications' scope."
+            if [ -z "$scopes" ]; then
+              echo "::error::No X-OAuth-Scopes header found. This token is likely a fine-grained PAT, which does not support the notifications API."
+              echo "::error::Create a classic PAT at https://github.com/settings/tokens/new?scopes=notifications and save it as the NOTIFICATION_TOKEN repository secret."
+            else
+              echo "::error::Token scopes: '$scopes'. The 'notifications' scope is required."
+            fi
             exit 1
           fi
-
-          # X-OAuth-Scopes header reveals the token's granted scopes
-          scopes=$(echo "$response" | grep -i '^x-oauth-scopes:' | sed 's/^[^:]*: *//' | tr -d '\r\n')
-          echo "X-OAuth-Scopes: '${scopes:-<not present>}'"
 
           if [ -z "$scopes" ]; then
             echo "::error::No X-OAuth-Scopes header found. NOTIFICATION_TOKEN must be a classic PAT (fine-grained PATs are not supported)."
