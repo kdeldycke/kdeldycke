@@ -90,7 +90,7 @@ jobs:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '3' }}
           BATCH_SIZE: ${{ inputs.batch-size || '200' }}
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == false && 'false' || 'true' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run != false && 'true' || 'false' }}
         run: |
           set -o pipefail
 
@@ -201,7 +201,7 @@ jobs:
           echo "---"
           echo "Inspected $n threads."
 
-          # Append results, then table, then stats to the summary
+          # Append results, stats, then table to the summary
           found=$(wc -l < "$rows" 2>/dev/null || echo 0)
           {
             echo ""
@@ -214,22 +214,6 @@ jobs:
               failed=$(grep -c '❌' "$rows" || true)
               echo "✅ **Unsubscribed:** $unsubscribed | ❌ **Failed:** $failed"
             fi
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$found" -gt 0 ]; then
-            {
-              echo ""
-              echo "### 📝 Details"
-              echo ""
-              echo "| 📝 Title | 📦 Link | 🕐 Last activity | 📊 Status |"
-              echo "| --- | --- | --- | --- |"
-            } >> "$GITHUB_STEP_SUMMARY"
-            cat "$rows" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          {
-            echo ""
-            echo "---"
             echo ""
             echo "### 📊 Batch details"
             echo ""
@@ -262,5 +246,18 @@ jobs:
               echo "> with a larger batch to clear the backlog faster."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$found" -gt 0 ]; then
+            {
+              echo ""
+              echo "---"
+              echo ""
+              echo "### 📝 Details"
+              echo ""
+              echo "| 📝 Title | 📦 Link | 🕐 Last activity | 📊 Status |"
+              echo "| --- | --- | --- | --- |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            cat "$rows" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
           rm -f "$rows"
