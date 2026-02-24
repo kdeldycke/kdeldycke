@@ -18,7 +18,6 @@ jobs:
           card: stats
           options: username=kdeldycke&show_icons=true&text_color=718096&hide_title=true&rank_icon=percentile
           path: profile/stats.svg
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit updated card
         run: |
