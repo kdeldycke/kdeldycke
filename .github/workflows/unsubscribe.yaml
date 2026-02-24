@@ -1,7 +1,7 @@
 # Unsubscribes from notification threads of closed issues and pull requests.
 # Requires a classic personal access token with "notifications" scope stored
 # as NOTIFICATION_TOKEN repository secret.
-name: 🔕 Unsubscribe Closed Threads
+name: 🔕 Unsubscribe closed threads
 "on":
   schedule:
     # Run weekly, every Monday at 9:13 UTC.
@@ -12,6 +12,10 @@ name: 🔕 Unsubscribe Closed Threads
         description: "Unsubscribe from closed issues/PRs inactive for more than this many months"
         default: "6"
         type: string
+      dry-run:
+        description: "Only list candidates without unsubscribing"
+        default: true
+        type: boolean
 
 jobs:
   unsubscribe:
@@ -23,14 +27,62 @@ jobs:
           && 'true'
           || 'echo "::error::NOTIFICATION_TOKEN secret is not set.
           Create a classic Personal Access Token with the notifications scope
-          and add it as a repository secret named NOTIFICATION_TOKEN."' }}
+          and add it as a repository secret named NOTIFICATION_TOKEN."; exit 1' }}
+
+      - name: Validate token permissions
+        env:
+          GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
+        run: |
+          # Fetch response headers from a minimal notifications request
+          headers=$(gh api -i /notifications -f per_page=1 -f all=false 2>&1 | head -20)
+
+          # Check the request succeeded
+          if echo "$headers" | grep -q "^HTTP/.* [45]"; then
+            echo "::error::NOTIFICATION_TOKEN cannot access the notifications API."
+            echo "::error::Ensure the token is a classic PAT with the 'notifications' scope."
+            exit 1
+          fi
+
+          # X-OAuth-Scopes header reveals the token's granted scopes
+          scopes=$(echo "$headers" | grep -i '^x-oauth-scopes:' | sed 's/^[^:]*: *//' | tr -d '\r\n')
+
+          if [ -z "$scopes" ]; then
+            echo "::error::Could not determine token scopes. NOTIFICATION_TOKEN must be a classic PAT."
+            exit 1
+          fi
+
+          if [ "$scopes" != "notifications" ]; then
+            echo "::warning::NOTIFICATION_TOKEN has more scopes than needed: '$scopes'. Only 'notifications' is required."
+          fi
+
+          echo "Token validated: scopes='$scopes'"
+
       - name: Unsubscribe from closed issues and PRs
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '6' }}
+          DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
         run: |
+          set -o pipefail
+
           cutoff=$(date -u -d "${MONTHS} months ago" +%Y-%m-%dT%H:%M:%SZ)
-          echo "Cutoff date: $cutoff (inactive for more than ${MONTHS} months)"
+          mode="dry-run"
+          if [ "$DRY_RUN" = "false" ]; then
+            mode="live"
+          fi
+
+          # Write report header
+          {
+            echo "## 🔕 Unsubscribe report ($mode)"
+            echo ""
+            echo "Cutoff: \`$cutoff\` (inactive for more than ${MONTHS} months)"
+            echo ""
+            echo "| Repository | Type | Title | Last activity | Status |"
+            echo "| --- | --- | --- | --- | --- |"
+          } > "$GITHUB_STEP_SUMMARY"
+
+          # Write table rows to a temp file (counters don't survive the pipe subshell)
+          rows=$(mktemp)
 
           gh api /notifications --paginate -f all=true | \
             jq -c '.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")' | \
@@ -39,15 +91,42 @@ jobs:
               url=$(echo "$thread" | jq -r '.subject.url')
               title=$(echo "$thread" | jq -r '.subject.title')
               repo=$(echo "$thread" | jq -r '.repository.full_name')
+              type=$(echo "$thread" | jq -r '.subject.type')
 
               # Fetch issue/PR state and last activity date
               data=$(gh api "$url" -q '{state: .state, updated_at: .updated_at}' 2>/dev/null || echo '{}')
               state=$(echo "$data" | jq -r '.state // "unknown"')
               updated_at=$(echo "$data" | jq -r '.updated_at // empty')
 
-              # Unsubscribe if closed and inactive past the cutoff
+              # Match closed threads inactive past the cutoff
               if [ "$state" = "closed" ] && [ -n "$updated_at" ] && [ "$updated_at" \< "$cutoff" ]; then
-                echo "Unsubscribing: $repo - $title (last activity: $updated_at)"
-                gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null || true
+                if [ "$DRY_RUN" = "true" ]; then
+                  echo "🔍 $repo - $title (last activity: $updated_at)"
+                  echo "| $repo | $type | $title | $updated_at | 🔍 dry-run |" >> "$rows"
+                elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
+                  echo "✅ $repo - $title (last activity: $updated_at)"
+                  echo "| $repo | $type | $title | $updated_at | ✅ |" >> "$rows"
+                else
+                  echo "❌ $repo - $title (last activity: $updated_at)"
+                  echo "| $repo | $type | $title | $updated_at | ❌ |" >> "$rows"
+                fi
               fi
             done
+
+          # Append rows and stats to the summary
+          cat "$rows" >> "$GITHUB_STEP_SUMMARY"
+          found=$(wc -l < "$rows" 2>/dev/null || echo 0)
+          {
+            echo ""
+            echo "---"
+            echo ""
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "**Candidates found:** $found (dry-run, no changes made)"
+            else
+              unsubscribed=$(grep -c '✅' "$rows" 2>/dev/null || echo 0)
+              failed=$(grep -c '❌' "$rows" 2>/dev/null || echo 0)
+              echo "**Unsubscribed:** $unsubscribed | **Failed:** $failed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          rm -f "$rows"
