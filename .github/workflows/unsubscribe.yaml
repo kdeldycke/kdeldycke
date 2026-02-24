@@ -89,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '6' }}
-          BATCH_SIZE: ${{ inputs.batch-size || '100' }}
+          BATCH_SIZE: ${{ inputs.batch-size || '200' }}
           DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
         run: |
           set -o pipefail
