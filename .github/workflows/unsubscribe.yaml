@@ -90,7 +90,7 @@ jobs:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '3' }}
           BATCH_SIZE: ${{ inputs.batch-size || '200' }}
-          DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == false && 'false' || 'true' }}
         run: |
           set -o pipefail
 
@@ -180,23 +180,19 @@ jobs:
               echo "  → skipped (closed, but active: $updated_at > cutoff $cutoff)"
             else
               count_closed_stale=$((count_closed_stale + 1))
-              link="$title"
-              if [ -n "$html_url" ]; then
-                link="[$title]($html_url)"
-              fi
               ref="$repo"
               if [ -n "$number" ] && [ -n "$html_url" ]; then
                 ref="[\`${repo}#${number}\`]($html_url)"
               fi
               if [ "$DRY_RUN" = "true" ]; then
                 echo "  → 🔍 candidate (closed, last activity: $updated_at)"
-                echo "| $link | $ref | $updated_at | 🔍 dry-run |" >> "$rows"
+                echo "| $title | $ref | $updated_at | 🔍 dry-run |" >> "$rows"
               elif gh api "/notifications/threads/$id/subscription" -X DELETE 2>/dev/null; then
                 echo "  → ✅ unsubscribed (closed, last activity: $updated_at)"
-                echo "| $link | $ref | $updated_at | ✅ |" >> "$rows"
+                echo "| $title | $ref | $updated_at | ✅ |" >> "$rows"
               else
                 echo "  → ❌ failed (closed, last activity: $updated_at)"
-                echo "| $link | $ref | $updated_at | ❌ |" >> "$rows"
+                echo "| $title | $ref | $updated_at | ❌ |" >> "$rows"
               fi
             fi
           done < "$threads"
@@ -225,7 +221,7 @@ jobs:
               echo ""
               echo "### 📝 Details"
               echo ""
-              echo "| 📝 Title | 📦 Repository | 🕐 Last activity | 📊 Status |"
+              echo "| 📝 Title | 📦 Link | 🕐 Last activity | 📊 Status |"
               echo "| --- | --- | --- | --- |"
             } >> "$GITHUB_STEP_SUMMARY"
             cat "$rows" >> "$GITHUB_STEP_SUMMARY"
