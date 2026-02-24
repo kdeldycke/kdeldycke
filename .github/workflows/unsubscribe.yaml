@@ -13,7 +13,7 @@ name: 🔕 Unsubscribe closed threads
     inputs:
       months:
         description: "Unsubscribe from closed issues/PRs inactive for more than this many months"
-        default: "6"
+        default: "3"
         type: string
       batch-size:
         description: "Max threads to inspect per run (backlog clears over successive runs)"
@@ -88,7 +88,7 @@ jobs:
       - name: Unsubscribe from closed issues and PRs
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
-          MONTHS: ${{ inputs.months || '6' }}
+          MONTHS: ${{ inputs.months || '3' }}
           BATCH_SIZE: ${{ inputs.batch-size || '400' }}
           DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
         run: |
