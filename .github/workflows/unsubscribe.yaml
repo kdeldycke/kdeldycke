@@ -4,8 +4,8 @@
 name: 🔕 Unsubscribe closed threads
 "on":
   schedule:
-    # Run weekly, every Monday at 9:13 UTC.
-    - cron: "13 9 * * 1"
+    # TODO: restore weekly schedule: "13 9 * * 1"
+    - cron: "13 * * * *"
   push:
     branches: ["main"]
     paths: [".github/workflows/unsubscribe.yaml"]
@@ -14,6 +14,10 @@ name: 🔕 Unsubscribe closed threads
       months:
         description: "Unsubscribe from closed issues/PRs inactive for more than this many months"
         default: "6"
+        type: string
+      batch-size:
+        description: "Max threads to inspect per run (backlog clears over successive runs)"
+        default: "100"
         type: string
       dry-run:
         description: "Only list candidates without unsubscribing"
@@ -85,6 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
           MONTHS: ${{ inputs.months || '6' }}
+          BATCH_SIZE: ${{ inputs.batch-size || '100' }}
           DRY_RUN: ${{ inputs.dry-run == false && 'false' || 'true' }}
         run: |
           set -o pipefail
@@ -113,14 +118,23 @@ jobs:
           # direction; the "before" parameter filters by *notification* update
           # time, not the underlying issue's, so all filtering happens
           # client-side.
-          echo "::group::Fetching all notification threads..."
-          threads=$(mktemp)
+          echo "::group::Fetching notification threads..."
+          all_threads=$(mktemp)
           gh api --method GET /notifications --paginate \
             -f all=true -f per_page=50 | \
             jq -c '[.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' \
-            > "$threads"
+            > "$all_threads"
+          all_total=$(wc -l < "$all_threads" | tr -d ' ')
+          echo "Found $all_total issue/PR notification threads total."
+
+          # Limit to batch size to avoid long runs; backlog clears over
+          # successive scheduled runs.
+          threads=$(mktemp)
+          head -n "$BATCH_SIZE" "$all_threads" > "$threads"
+          rm -f "$all_threads"
           total=$(wc -l < "$threads" | tr -d ' ')
-          echo "Found $total issue/PR notification threads to inspect."
+          remaining=$((all_total - total))
+          echo "Inspecting $total threads (batch size: $BATCH_SIZE, remaining: $remaining)."
           echo "::endgroup::"
 
           n=0
@@ -173,6 +187,10 @@ jobs:
               unsubscribed=$(grep -c '✅' "$rows" 2>/dev/null || echo 0)
               failed=$(grep -c '❌' "$rows" 2>/dev/null || echo 0)
               echo "**Unsubscribed:** $unsubscribed | **Failed:** $failed"
+            fi
+            if [ "$remaining" -gt 0 ]; then
+              echo ""
+              echo "**Backlog:** $remaining threads remaining (will be processed in future runs)"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
