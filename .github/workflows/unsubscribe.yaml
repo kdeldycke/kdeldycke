@@ -20,6 +20,10 @@ name: 🔕 Unsubscribe closed threads
         default: true
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   unsubscribe:
     runs-on: ubuntu-slim
@@ -104,8 +108,12 @@ jobs:
           # Write table rows to a temp file (counters don't survive the pipe subshell)
           rows=$(mktemp)
 
-          gh api --method GET /notifications --paginate -f all=true | \
-            jq -c '.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")' | \
+          # Fetch notifications not updated since the cutoff (server-side pre-filter),
+          # select Issues and PRs, then reverse to process oldest first.
+          # The API has no sort parameter; it always returns newest first.
+          gh api --method GET /notifications --paginate \
+            -f all=true -f per_page=20 -f "before=$cutoff" | \
+            jq -c '[.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' | \
             while IFS= read -r thread; do
               id=$(echo "$thread" | jq -r '.id')
               url=$(echo "$thread" | jq -r '.subject.url')
