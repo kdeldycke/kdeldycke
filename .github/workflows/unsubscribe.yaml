@@ -122,7 +122,7 @@ jobs:
           all_threads=$(mktemp)
           gh api --method GET /notifications --paginate \
             -f all=true -f per_page=50 | \
-            jq -c '[.[] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' \
+            jq -c --slurp '[.[][] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' \
             > "$all_threads"
           all_total=$(wc -l < "$all_threads" | tr -d ' ')
           echo "Found $all_total issue/PR notification threads total."
