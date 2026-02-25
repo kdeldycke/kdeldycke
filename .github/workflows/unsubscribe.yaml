@@ -106,14 +106,16 @@ jobs:
           # Write table rows to a temp file (counters don't survive the pipe subshell)
           rows=$(mktemp)
 
-          # Fetch unread notification threads, then filter to Issues and PRs.
-          # Only unread threads are fetched (no all=true) so that threads
-          # marked as read after unsubscribing don't reappear in future runs.
-          # The API has no server-side filter for issue/PR state or sort
-          # direction, so all filtering happens client-side.
+          # Fetch all notification threads (read and unread), then filter to
+          # Issues and PRs. Using all=true ensures we also catch subscriptions
+          # where the notification was read but never unsubscribed.
+          # Re-processing is safe: DELETE /notifications/threads/{id}/subscription
+          # is idempotent. The API has no server-side filter for issue/PR state
+          # or sort direction, so all filtering happens client-side.
           echo "::group::Fetching notification threads..."
           all_threads=$(mktemp)
           gh api --method GET /notifications --paginate \
+            -f all=true \
             -f per_page=50 | \
             jq -c --slurp '[.[][] | select(.subject.type == "Issue" or .subject.type == "PullRequest")] | reverse | .[]' \
             > "$all_threads"
@@ -251,6 +253,202 @@ jobs:
             {
               echo ""
               echo "---"
+              echo ""
+              echo "### 📝 Details"
+              echo ""
+              echo "| 💬 Title | 🔗 Link | 🕐 Last activity | ⚡ Action |"
+              echo "| --- | --- | --- | --- |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            cat "$rows" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          rm -f "$rows"
+
+      - name: Unsubscribe via GraphQL (threadless subscriptions)
+        env:
+          GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
+          MONTHS: ${{ inputs.months || '3' }}
+          BATCH_SIZE: ${{ inputs.batch-size || '200' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run != false && 'true' || 'false' }}
+        run: |
+          set -o pipefail
+
+          cutoff=$(date -u -d "${MONTHS} months ago" +%Y-%m-%dT%H:%M:%SZ)
+          cutoff_date=$(date -u -d "${MONTHS} months ago" +%Y-%m-%d)
+          mode="dry-run"
+          if [ "$DRY_RUN" = "false" ]; then
+            mode="live"
+          fi
+
+          # --- Permission check ---
+          username=$(gh api /user -q '.login')
+          echo "Authenticated as: $username"
+
+          if ! gh api graphql -f query='query { viewer { login } }' -q '.data.viewer.login' > /dev/null 2>&1; then
+            echo "::warning::GraphQL API not accessible with current token. Skipping threadless subscription cleanup."
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "---" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "## 🔕 Threadless subscriptions ($mode)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> [!WARNING]" >> "$GITHUB_STEP_SUMMARY"
+            echo "> GraphQL API not accessible with current token. Skipping." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # --- Search for closed issues/PRs the user is involved in ---
+          echo "::group::Searching for threadless subscriptions via GraphQL..."
+          search_query="involves:${username} is:closed updated:<${cutoff_date}"
+          echo "Search query: $search_query"
+
+          nodes=$(mktemp)
+          cursor=""
+          fetched=0
+
+          while true; do
+            if [ -z "$cursor" ]; then
+              after_arg=""
+            else
+              after_arg=", after: \"$cursor\""
+            fi
+
+            remaining=$((BATCH_SIZE - fetched))
+            if [ "$remaining" -le 0 ]; then
+              break
+            fi
+            page_size=$remaining
+            if [ "$page_size" -gt 100 ]; then
+              page_size=100
+            fi
+
+            result=$(gh api graphql -f query='
+              query($q: String!) {
+                search(query: $q, type: ISSUE, first: '"$page_size"''"$after_arg"') {
+                  pageInfo { hasNextPage endCursor }
+                  nodes {
+                    ... on Issue {
+                      __typename
+                      id
+                      number
+                      title
+                      updatedAt
+                      viewerSubscription
+                      repository { nameWithOwner }
+                      url
+                    }
+                    ... on PullRequest {
+                      __typename
+                      id
+                      number
+                      title
+                      updatedAt
+                      viewerSubscription
+                      repository { nameWithOwner }
+                      url
+                    }
+                  }
+                }
+              }
+            ' -f q="$search_query")
+
+            echo "$result" | jq -c '.data.search.nodes[]' >> "$nodes"
+            page_count=$(echo "$result" | jq '.data.search.nodes | length')
+            fetched=$((fetched + page_count))
+
+            has_next=$(echo "$result" | jq -r '.data.search.pageInfo.hasNextPage')
+            if [ "$has_next" != "true" ]; then
+              break
+            fi
+            cursor=$(echo "$result" | jq -r '.data.search.pageInfo.endCursor')
+            echo "  Fetched $fetched items so far..."
+          done
+
+          all_total=$(wc -l < "$nodes" | tr -d ' ')
+          echo "Found $all_total closed issues/PRs involving $username."
+          echo "::endgroup::"
+
+          # --- Filter and unsubscribe ---
+          rows=$(mktemp)
+          n=0
+          count_not_subscribed=0
+          count_subscribed=0
+
+          while IFS= read -r node; do
+            n=$((n + 1))
+            subscription=$(echo "$node" | jq -r '.viewerSubscription // "UNSUBSCRIBED"')
+            if [ "$subscription" != "SUBSCRIBED" ]; then
+              count_not_subscribed=$((count_not_subscribed + 1))
+              continue
+            fi
+
+            count_subscribed=$((count_subscribed + 1))
+            node_id=$(echo "$node" | jq -r '.id')
+            title=$(echo "$node" | jq -r '.title')
+            repo=$(echo "$node" | jq -r '.repository.nameWithOwner')
+            number=$(echo "$node" | jq -r '.number')
+            html_url=$(echo "$node" | jq -r '.url')
+            updated_at=$(echo "$node" | jq -r '.updatedAt')
+            typename=$(echo "$node" | jq -r '.__typename')
+
+            ref="[\`${repo}#${number}\`]($html_url)"
+            now_epoch=$(date -u +%s)
+            then_epoch=$(date -u -d "$updated_at" +%s)
+            days_ago=$(( (now_epoch - then_epoch) / 86400 ))
+            ago="${days_ago} days ago"
+
+            echo "[$n/$all_total] $repo#$number - $title ($typename, subscription=$subscription)"
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "  → 🔍 candidate (subscribed, last activity: $updated_at)"
+              echo "| $title | $ref | $ago | 👁️ Dry-run |" >> "$rows"
+            elif gh api graphql -f query='
+              mutation($id: ID!) {
+                updateSubscription(input: {subscribableId: $id, state: UNSUBSCRIBED}) {
+                  subscribable { viewerSubscription }
+                }
+              }
+            ' -f id="$node_id" > /dev/null 2>&1; then
+              echo "  → 🔕 unsubscribed (last activity: $updated_at)"
+              echo "| $title | $ref | $ago | 🔕 Unsubscribed |" >> "$rows"
+            else
+              echo "  → ❌ failed (last activity: $updated_at)"
+              echo "| $title | $ref | $ago | ⚠️ Failed |" >> "$rows"
+            fi
+          done < "$nodes"
+          rm -f "$nodes"
+
+          echo "---"
+          echo "Inspected $n items: $count_subscribed subscribed, $count_not_subscribed not subscribed."
+
+          # --- Report ---
+          found=$(wc -l < "$rows" 2>/dev/null || echo 0)
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 🔕 Threadless subscriptions ($mode)"
+            echo ""
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "🔍 **Candidates found:** $found — cutoff: \`$cutoff\` (inactive for more than ${MONTHS} months, dry-run)"
+            else
+              unsubscribed=$(grep -c '🔕' "$rows" || true)
+              failed=$(grep -c '⚠️' "$rows" || true)
+              echo "🔕 **Unsubscribed:** $unsubscribed | ⚠️ **Failed:** $failed — cutoff: \`$cutoff\` (inactive for more than ${MONTHS} months)"
+            fi
+            echo ""
+            echo "### 📊 Search details"
+            echo ""
+            echo "| Metric | Value |"
+            echo "| --- | --- |"
+            echo "| 🔎 Search query | \`involves:${username} is:closed updated:<${cutoff_date}\` |"
+            echo "| 🔔 Total results | $all_total |"
+            echo "| 📦 Batch size | $BATCH_SIZE |"
+            echo "| ✅ Still subscribed | $count_subscribed |"
+            echo "| ⏭️ Not subscribed | $count_not_subscribed |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$found" -gt 0 ]; then
+            {
               echo ""
               echo "### 📝 Details"
               echo ""
