@@ -1,5 +1,5 @@
 ---
-name: "\U0001F195 Renovate"
+name: 🆕 Renovate
 "on":
   schedule:
     - cron: "3 17 * * 1"
@@ -10,8 +10,10 @@ name: "\U0001F195 Renovate"
     paths:
       - .github/workflows/renovate.yaml
       - renovate.json5
+      - repomatic/data/renovate.json5
 
 jobs:
+
   renovate:
     uses: kdeldycke/repomatic/.github/workflows/renovate.yaml@v6.1.0
     secrets:
