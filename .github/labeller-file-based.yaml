@@ -1,0 +1,38 @@
+---
+"🆙 changelog":
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/workflows/changelog.yaml
+      - .github/workflows/release.yaml
+      - changelog.md
+
+"🤖 ci":
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/**/*
+      - .github/workflows/release.yaml
+      - pyproject.toml
+      - .gitignore
+
+"📦 dependencies":
+  - changed-files:
+    - any-glob-to-any-file:
+      - renovate.json5
+      - "*.lock"
+      - "**/pyproject.toml"
+
+"📚 documentation":
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/**/*label*
+      - .github/workflows/docs.yaml
+      - .github/code-of-conduct.md
+      - docs/**/*
+      - .mailmap
+      - license
+      - readme.md
+
+"💖 sponsor":
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/funding.yml
