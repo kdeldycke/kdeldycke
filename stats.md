@@ -10,8 +10,7 @@
 
 [![Absolute star history chart](https://api.star-history.com/svg?repos=kdeldycke/click-extra,kdeldycke/workflows,kdeldycke/meta-package-manager,kdeldycke/mail-deduplicate,kdeldycke/plumage,kdeldycke/dotfiles,kdeldycke/kevin-deldycke-blog,kdeldycke/vat-rates&type=Date)](https://star-history.com/#kdeldycke/click-extra&kdeldycke/workflows&kdeldycke/meta-package-manager&kdeldycke/mail-deduplicate&kdeldycke/plumage&kdeldycke/dotfiles&kdeldycke/kevin-deldycke-blog&kdeldycke/vat-rates&Date)
 
-
-## Awesome-* lists
+## Awesome-\* lists
 
 ### Relative
 
@@ -20,7 +19,6 @@
 ### Absolute
 
 [![Absolute star history chart](https://api.star-history.com/svg?repos=kdeldycke/awesome-billing,kdeldycke/awesome-iam,kdeldycke/awesome-engineering-team-management,kdeldycke/awesome-falsehood&type=Date)](https://star-history.com/#kdeldycke/awesome-billing&kdeldycke/awesome-iam&kdeldycke/awesome-engineering-team-management&kdeldycke/awesome-falsehood&Date)
-
 
 ## Unmaintained projects
 
