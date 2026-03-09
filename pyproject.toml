@@ -1,3 +1,61 @@
 [tool.repomatic]
 init-exclude = ["linters", "skills", "changelog"]
 workflow-sync-exclude = ["changelog.yaml", "debug.yaml", "docs.yaml", "release.yaml"]
+
+# bump-my-version configuration for Python projects.
+#
+# Native format - can be used standalone as .bumpversion.toml.
+# When merged into pyproject.toml via `repomatic init bumpversion`,
+# the [tool.bumpversion] prefix is added automatically.
+
+[tool.bumpversion]
+current_version = "0.0.0.dev0"
+allow_dirty = true
+ignore_missing_files = true
+# Parse versions with an optional .devN suffix (PEP 440).
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(\\.dev(?P<dev>\\d+))?"
+serialize = [
+  "{major}.{minor}.{patch}.dev{dev}",
+  "{major}.{minor}.{patch}",
+]
+# When dev is "release" (its optional value), the .devN suffix is omitted.
+# Bumping patch/minor/major resets dev to "0", producing X.Y.Z.dev0.
+# Bumping dev goes from "0" to "release", stripping the suffix for release.
+parts.dev.values = [ "0", "release" ]
+parts.dev.optional_value = "release"
+
+[[tool.bumpversion.files]]
+# Update Python package version in any __init__.py file.
+glob = "./**/__init__.py"
+ignore_missing_version = true
+
+[[tool.bumpversion.files]]
+# Update version in [project] section.
+filename = "./pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+# Update version in download URL.
+filename = "./pyproject.toml"
+search = "releases/tag/v{current_version}"
+replace = "releases/tag/v{new_version}"
+
+[[tool.bumpversion.files]]
+# Update the version in Markdown changelog.
+filename = "./changelog.md"
+search = "## [`{current_version}` (unreleased)]("
+replace = "## [`{new_version}` (unreleased)]("
+
+[[tool.bumpversion.files]]
+# Update the version in the citation file.
+filename = "./citation.cff"
+search = "version: {current_version}"
+replace = "version: {new_version}"
+
+[[tool.bumpversion.files]]
+# Update the release date in the citation file.
+filename = "./citation.cff"
+regex = true
+search = "date-released: \\d{{4}}-\\d{{2}}-\\d{{2}}"
+replace = "date-released: {utcnow:%Y-%m-%d}"
