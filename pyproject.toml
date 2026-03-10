@@ -1,3 +1,4 @@
 [tool.repomatic]
-init-exclude = ["linters", "skills", "changelog"]
-workflow-sync-exclude = ["changelog.yaml", "debug.yaml", "docs.yaml", "release.yaml"]
+zizmor.sync = false
+init.exclude = ["linters", "skills", "changelog"]
+workflow.sync-exclude = ["changelog.yaml", "debug.yaml", "docs.yaml", "release.yaml"]
