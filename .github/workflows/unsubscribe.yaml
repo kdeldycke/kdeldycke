@@ -36,11 +36,13 @@ jobs:
       - name: Unsubscribe from closed threads
         env:
           GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
+          MONTHS: ${{ inputs.months || '3' }}
+          BATCH_SIZE: ${{ inputs.batch-size || '200' }}
         run: >
           uvx --no-progress 'repomatic==6.1.0'
           unsubscribe-threads
-          --months ${{ inputs.months || '3' }}
-          --batch-size ${{ inputs.batch-size || '200' }}
+          --months "$MONTHS"
+          --batch-size "$BATCH_SIZE"
           ${{ github.event_name == 'workflow_dispatch'
           && inputs.dry-run != false
           && '--dry-run' || '--live' }}
