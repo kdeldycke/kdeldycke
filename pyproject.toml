@@ -1,2 +1,2 @@
 [tool.repomatic]
-exclude = ["skills", "changelog", "zizmor", "workflows/changelog.yaml", "workflows/debug.yaml", "workflows/docs.yaml", "workflows/release.yaml"]
+exclude = ["skills", "changelog", "workflows/changelog.yaml", "workflows/debug.yaml", "workflows/docs.yaml", "workflows/release.yaml"]
