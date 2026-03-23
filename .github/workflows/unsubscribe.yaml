@@ -39,7 +39,10 @@ jobs:
           MONTHS: ${{ inputs.months || '3' }}
           BATCH_SIZE: ${{ inputs.batch-size || '200' }}
         run: >
-          uvx --no-progress 'repomatic==6.4.1'
+          uvx --no-progress
+          --from 'repomatic @ git+https://github.com/kdeldycke/repomatic.git@main'
+          repomatic
+          -vvv
           unsubscribe-threads
           --months "$MONTHS"
           --batch-size "$BATCH_SIZE"
