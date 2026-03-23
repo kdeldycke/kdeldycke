@@ -1,3 +1,2 @@
 [tool.repomatic]
-init.exclude = ["skills", "changelog", "zizmor"]
-workflow.sync-exclude = ["changelog.yaml", "debug.yaml", "docs.yaml", "release.yaml"]
+exclude = ["skills", "changelog", "zizmor", "workflows/changelog.yaml", "workflows/debug.yaml", "workflows/docs.yaml", "workflows/release.yaml"]
