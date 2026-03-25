@@ -1,2 +1,3 @@
 [tool.repomatic]
+notification.unsubscribe = true
 exclude = ["skills", "changelog", "workflows/changelog.yaml", "workflows/debug.yaml", "workflows/docs.yaml", "workflows/release.yaml"]

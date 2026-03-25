@@ -1,52 +1,17 @@
-# Unsubscribes from notification threads of closed issues and pull requests.
-# Requires a classic personal access token with "notifications" scope stored
-# as NOTIFICATION_TOKEN repository secret.
+---
 name: 🔕 Unsubscribe closed threads
 "on":
-  schedule:
-    # Run weekly, every Monday at 9:13 UTC.
-    - cron: "13 9 * * 1"
-  push:
-    branches: ["main"]
-    paths: [".github/workflows/unsubscribe.yaml"]
   workflow_dispatch:
     inputs:
-      months:
-        description: "Unsubscribe from closed issues/PRs inactive for more than this many months"
-        default: "3"
-        type: string
-      batch-size:
-        description: "Max threads to inspect per run (backlog clears over successive runs)"
-        default: "200"
-        type: string
-      dry-run:
-        description: "Dry-run: only list candidates, do not perform unsubscribing"
-        default: true
-        type: boolean
-
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+      months: {'description': 'Unsubscribe from closed issues/PRs inactive for more than this many months', 'default': '3', 'type': 'string'}
+      batch-size: {'description': 'Max threads to inspect per run (backlog clears over successive runs)', 'default': '200', 'type': 'string'}
+      dry-run: {'description': 'Dry-run: only list candidates, do not perform unsubscribing', 'default': True, 'type': 'boolean'}
+  schedule:
+    - cron: "13 9 * * 1"
 
 jobs:
+
   unsubscribe:
-    runs-on: ubuntu-slim
-    steps:
-      - uses: astral-sh/setup-uv@v7.3.0
-      - name: Unsubscribe from closed threads
-        env:
-          GH_TOKEN: ${{ secrets.NOTIFICATION_TOKEN }}
-          MONTHS: ${{ inputs.months || '3' }}
-          BATCH_SIZE: ${{ inputs.batch-size || '200' }}
-        run: >
-          uvx --no-progress
-          --from 'repomatic @ git+https://github.com/kdeldycke/repomatic.git@main'
-          repomatic
-          -vvv
-          unsubscribe-threads
-          --months "$MONTHS"
-          --batch-size "$BATCH_SIZE"
-          ${{ github.event_name == 'workflow_dispatch'
-          && inputs.dry-run != false
-          && '--dry-run' || '--live' }}
-          >> "$GITHUB_STEP_SUMMARY"
+    uses: kdeldycke/repomatic/.github/workflows/unsubscribe.yaml@v6.7.0
+    secrets:
+      REPOMATIC_NOTIFICATIONS_PAT: ${{ secrets.REPOMATIC_NOTIFICATIONS_PAT }}
