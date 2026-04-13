@@ -3,15 +3,24 @@ name: 🔕 Unsubscribe closed threads
 "on":
   workflow_dispatch:
     inputs:
-      months: {'description': 'Unsubscribe from closed issues/PRs inactive for more than this many months', 'default': '3', 'type': 'string'}
-      batch-size: {'description': 'Max threads to inspect per run (backlog clears over successive runs)', 'default': '200', 'type': 'string'}
-      dry-run: {'description': 'Dry-run: only list candidates, do not perform unsubscribing', 'default': True, 'type': 'boolean'}
+      months:
+        description: Unsubscribe from closed issues/PRs inactive for more than this many months
+        default: 3
+        type: string
+      batch-size:
+        description: Max threads to inspect per run (backlog clears over successive runs)
+        default: 200
+        type: string
+      dry-run:
+        description: "Dry-run: only list candidates, do not perform unsubscribing"
+        default: true
+        type: boolean
   schedule:
     - cron: "13 9 * * 1"
 
 jobs:
 
   unsubscribe:
-    uses: kdeldycke/repomatic/.github/workflows/unsubscribe.yaml@v6.7.0
+    uses: kdeldycke/repomatic/.github/workflows/unsubscribe.yaml@c8f44f78ebc03da94c3fa9345e1978df504cc7e3 # v6.12.0
     secrets:
       REPOMATIC_NOTIFICATIONS_PAT: ${{ secrets.REPOMATIC_NOTIFICATIONS_PAT }}
