@@ -9,7 +9,7 @@
         aria-labelledby="descId"
       >
         <title id="titleId">Kevin Deldycke's GitHub Stats, Rank: A+</title>
-        <desc id="descId">Total Stars Earned: 34665, Total Commits  (last year) : 5400, Total PRs: 1035, Total Issues: 420, Contributed to (last year): 42</desc>
+        <desc id="descId">Total Stars Earned: 34722, Total Commits  (last year) : 4970, Total PRs: 1127, Total Issues: 423, Contributed to (last year): 43</desc>
         <style>
           .header {
             font: 600 18px 'Segoe UI', Ubuntu, Sans-Serif;
@@ -73,7 +73,7 @@
         stroke-dashoffset: 251.32741228718345;
       }
       to {
-        stroke-dashoffset: 5.464897813116679;
+        stroke-dashoffset: 5.464024657694608;
       }
     }
   
@@ -166,7 +166,7 @@
         x="219.01"
         y="12.5"
         data-testid="commits"
-      >5.4k</text>
+      >5k</text>
     </g>
   </g><g transform="translate(0, 50)">
     <g class="stagger" style="animation-delay: 750ms" transform="translate(25, 0)">
@@ -181,7 +181,7 @@
         x="219.01"
         y="12.5"
         data-testid="prs"
-      >1k</text>
+      >1.1k</text>
     </g>
   </g><g transform="translate(0, 75)">
     <g class="stagger" style="animation-delay: 900ms" transform="translate(25, 0)">
@@ -196,7 +196,7 @@
         x="219.01"
         y="12.5"
         data-testid="issues"
-      >420</text>
+      >423</text>
     </g>
   </g><g transform="translate(0, 100)">
     <g class="stagger" style="animation-delay: 1050ms" transform="translate(25, 0)">
@@ -211,7 +211,7 @@
         x="219.01"
         y="12.5"
         data-testid="contribs"
-      >42</text>
+      >43</text>
     </g>
   </g>
     </svg>
