@@ -1,23 +1,28 @@
+---
 name: 📈 Readme stats
-on:
+"on":
   # Update weekly, every Monday at 3:00 UTC.
   schedule:
     - cron: "0 3 * * 1"
   workflow_dispatch:
   push:
     branches:
-      - "main"
+      - main
     paths:
       - ".github/workflows/readme-stats.yaml"
+
+permissions: {}
 
 jobs:
   stats:
     runs-on: ubuntu-slim
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Generate stats card
-        uses: readme-tools/github-readme-stats-action@v1.1.0
+        uses: readme-tools/github-readme-stats-action@b4d2ef3b8051484b318d455163153b23a2b35fa2 # v1.1.0
         with:
           card: stats
           options: username=kdeldycke&show_icons=true&text_color=718096&hide_title=true&rank_icon=percentile
