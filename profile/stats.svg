@@ -9,7 +9,7 @@
         aria-labelledby="descId"
       >
         <title id="titleId">Kevin Deldycke's GitHub Stats, Rank: S</title>
-        <desc id="descId">Total Stars Earned: 35124, Total Commits  (last year) : 6255, Total PRs: 1674, Total Issues: 438, Contributed to (last year): 52</desc>
+        <desc id="descId">Total Stars Earned: 35141, Total Commits  (last year) : 6342, Total PRs: 1711, Total Issues: 438, Contributed to (last year): 52</desc>
         <style>
           .header {
             font: 600 18px 'Segoe UI', Ubuntu, Sans-Serif;
@@ -73,7 +73,7 @@
         stroke-dashoffset: 251.32741228718345;
       }
       to {
-        stroke-dashoffset: 0.6838186032292151;
+        stroke-dashoffset: 0.6837113343842514;
       }
     }
   
