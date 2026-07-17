@@ -30,6 +30,12 @@ jobs:
             &show=prs_merged_percentage,prs_reviewed"
           path: stats.svg
 
+      # The action exits 0 even when the GitHub API errors out, silently
+      # writing a "Something went wrong" SVG. Fail the job instead of letting
+      # the commit step below replace a good card with a broken one.
+      - name: Reject error card
+        run: "! grep --quiet 'Something went wrong' stats.svg"
+
       - name: Commit updated card
         run: |
           git config user.name "github-actions"
