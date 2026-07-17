@@ -25,13 +25,15 @@ jobs:
         uses: readme-tools/github-readme-stats-action@f9d8133845f40d659a754f78b8484983ba766448 # v2.0.1
         with:
           card: stats
-          options: username=kdeldycke&show_icons=true&text_color=718096&hide_title=true&rank_icon=percentile
-          path: profile/stats.svg
+          core_version: 2.1.3
+          options: "show_icons=true&text_color=718096&hide_title=true&rank_icon=percentile\
+            &show=prs_merged_percentage,prs_reviewed"
+          path: stats.svg
 
       - name: Commit updated card
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add profile/stats.svg
+          git add stats.svg
           git commit -m "Update readme stats card" || exit 0
           git push

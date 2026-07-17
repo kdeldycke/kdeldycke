@@ -1,4 +1,4 @@
-<img align="right" src="./profile/stats.svg"/>
+<img align="right" src="./stats.svg"/>
 
 My name is **Kevin Deldycke**, I'm a tech Engineering Manager.
 
