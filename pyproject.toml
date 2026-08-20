@@ -1,3 +1,26 @@
 [tool.repomatic]
 notification.unsubscribe = true
 exclude = ["skills", "changelog", "workflows/changelog.yaml", "workflows/debug.yaml", "workflows/docs.yaml", "workflows/release.yaml"]
+# GitHub closed its stargazer endpoints to non-admins in 2026, which broke every
+# third-party star chart the readme could embed. The aggregate count stayed
+# public, so the history is accrued here instead: a store committed to this
+# repository cannot be revoked upstream. An admin token also rebuilds each curve
+# exactly from per-star timestamps, which is finer than any export ever was.
+metrics.charts = [
+  { output = "./star-history.svg", scale = "logarithmic", title = "GitHub star history" },
+]
+metrics.store = "./metrics.csv"
+metrics.subjects.awesome-billing = "kdeldycke/awesome-billing"
+metrics.subjects.awesome-engineering-team-management = "kdeldycke/awesome-engineering-team-management"
+metrics.subjects.awesome-falsehood = "kdeldycke/awesome-falsehood"
+metrics.subjects.awesome-iam = "kdeldycke/awesome-iam"
+metrics.subjects.blog = "kdeldycke/blog"
+metrics.subjects.click-extra = "kdeldycke/click-extra"
+metrics.subjects.dotfiles = "kdeldycke/dotfiles"
+metrics.subjects.extra-platforms = "kdeldycke/extra-platforms"
+metrics.subjects.mail-deduplicate = "kdeldycke/mail-deduplicate"
+metrics.subjects.meta-package-manager = "kdeldycke/meta-package-manager"
+metrics.subjects.plumage = "kdeldycke/plumage"
+metrics.subjects.repomatic = "kdeldycke/repomatic"
+metrics.subjects.vat-rates = "kdeldycke/vat-rates"
+metrics.sync = true
