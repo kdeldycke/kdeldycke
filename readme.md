@@ -29,7 +29,9 @@ My most relevant experience was in [growing a team from 0 to 12](https://devtoma
 
 - 🌟 [35,000+ GitHub stars](https://gitstar-ranking.com/kdeldycke). The most popular repository being the [Falsehoods Programmers Believe in](https://github.com/kdeldycke/awesome-falsehood). It is regularly [featured on popular media](./in-the-media.md).
 
-  ![Star history of my repositories](./star-history.svg)
+  ![Star history of my curated lists](./star-history-lists.svg)
+
+  ![Star history of my software projects](./star-history-projects.svg)
 
 - 💵 Wrote the [best open-source
   payroll](https://kevin.deldycke.com/2008/06/best-open-source-payroll-software/)

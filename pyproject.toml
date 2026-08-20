@@ -6,8 +6,13 @@ exclude = ["skills", "changelog", "workflows/changelog.yaml", "workflows/debug.y
 # public, so the history is accrued here instead: a store committed to this
 # repository cannot be revoked upstream. An admin token also rebuilds each curve
 # exactly from per-star timestamps, which is finer than any export ever was.
+# Two charts rather than one: thirteen series overrun the twelve-colour palette,
+# and the split is the one the subjects already make. Logarithmic on both, so a
+# repository of 31 stars and one of 27,626 read as comparable slopes instead of
+# the smaller flattening onto the axis.
 metrics.charts = [
-  { output = "./star-history.svg", scale = "logarithmic", title = "GitHub star history" },
+  { only = [ "awesome-falsehood", "awesome-engineering-team-management", "awesome-iam", "awesome-billing" ], output = "./star-history-lists.svg", scale = "logarithmic", title = "GitHub star history of my curated lists" },
+  { only = [ "meta-package-manager", "mail-deduplicate", "dotfiles", "click-extra", "vat-rates", "repomatic", "plumage", "blog", "extra-platforms" ], output = "./star-history-projects.svg", scale = "logarithmic", title = "GitHub star history of my software projects" },
 ]
 metrics.store = "./metrics.csv"
 metrics.subjects.awesome-billing = "kdeldycke/awesome-billing"
