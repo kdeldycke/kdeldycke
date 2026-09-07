@@ -29,3 +29,9 @@ metrics.subjects.plumage = "kdeldycke/plumage"
 metrics.subjects.repomatic = "kdeldycke/repomatic"
 metrics.subjects.vat-rates = "kdeldycke/vat-rates"
 metrics.sync = true
+
+[tool.repomatic.test-matrix]
+unstable = [{ os = "ubuntu-26.04" }]
+
+[tool.repomatic.test-matrix.variations]
+os = ["ubuntu-26.04"]
