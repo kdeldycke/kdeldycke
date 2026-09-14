@@ -1,0 +1,124 @@
+# TEMPORARY probe workflow, to be deleted once the `/notifications` `before` filter is answered.
+#
+# Question: does `GET /notifications` honour the `before` parameter, and does it compose with
+# `all=true` and `gh api --paginate`? GitHub ignores an unknown query parameter silently, so a
+# call that simply succeeds proves nothing. Only a control that empties the set does.
+#
+# It lives here rather than in kdeldycke/repomatic because `/notifications` needs a classic PAT
+# with the `notifications` scope, and REPOMATIC_NOTIFICATIONS_PAT is configured here.
+#
+# It installs nothing: the runner's own `gh` and `python` answer the question, so no cooldown
+# window applies and no toolchain has to be provisioned.
+#
+# Privacy: this reads the account's notifications, which name private repositories, into a
+# public repository's logs. It prints counts and timestamps only, never a repository name, a
+# thread title or a URL. Keep it that way.
+---
+name: "\U0001F52C Notifications before-filter probe"
+"on":
+  push:
+    paths:
+      - .github/workflows/notifications-probe.yaml
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  probe-notifications:
+    name: "\U0001F52C Probe /notifications"
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Probe the before parameter
+        shell: python
+        env:
+          GH_TOKEN: ${{ secrets.REPOMATIC_NOTIFICATIONS_PAT }}
+        run: |
+          """Measure what `before` does to `GET /notifications`.
+
+          Prints aggregates only: counts, timestamps, and pass/fail verdicts.
+          """
+          import os
+          import subprocess
+          from datetime import datetime, timedelta, timezone
+
+          if not os.environ.get("GH_TOKEN"):
+              raise SystemExit("REPOMATIC_NOTIFICATIONS_PAT is not configured here.")
+
+          STAMP = "%Y-%m-%dT%H:%M:%SZ"
+          NOW = datetime.now(timezone.utc)
+          # The production cutoff is arrow month arithmetic; 90 days is the same
+          # question for a contract probe.
+          CUTOFF = NOW - timedelta(days=90)
+          EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+          failures = []
+
+          def gate(name, ok, detail=""):
+              print(f"{'PASS' if ok else 'FAIL'}  {name}  {detail}")
+              if not ok:
+                  failures.append(name)
+
+          def gh(args):
+              run = subprocess.run(
+                  ["gh", *args], capture_output=True, text=True, encoding="UTF-8"
+              )
+              if run.returncode != 0:
+                  raise SystemExit(f"gh failed: {run.stderr.strip()[:400]}")
+              return run.stdout
+
+          def stamps(before=None):
+              """Every notification `updated_at`, through the production argv."""
+              args = [
+                  "api", "--method", "GET", "/notifications", "--paginate",
+                  "--jq", ".[].updated_at",
+                  "--raw-field", "all=true",
+                  "--raw-field", "per_page=50",
+              ]
+              if before is not None:
+                  args += ["--raw-field", f"before={before:{STAMP}}"]
+              return [line.strip() for line in gh(args).splitlines() if line.strip()]
+
+          print(gh(["--version"]).splitlines()[0])
+          print(f"cutoff (90 days): {CUTOFF:{STAMP}}")
+
+          unfiltered = stamps()
+          filtered = stamps(CUTOFF)
+          epoch = stamps(EPOCH)
+          recent = stamps(NOW)
+
+          print(f"notifications, unfiltered:    {len(unfiltered)}")
+          print(f"notifications, before cutoff: {len(filtered)}")
+          print(f"notifications, before now:    {len(recent)}")
+          print(f"notifications, before epoch:  {len(epoch)}")
+          if filtered:
+              print(f"filtered span: {min(filtered)} .. {max(filtered)}")
+          if unfiltered:
+              print(f"full span:     {min(unfiltered)} .. {max(unfiltered)}")
+
+          # The control that decides it: an ignored parameter returns everything.
+          gate("before is honoured, not ignored", not epoch,
+               f"epoch returned {len(epoch)}")
+          gate("before filters the set", len(filtered) < len(unfiltered),
+               f"{len(filtered)} < {len(unfiltered)}")
+          gate("before is monotonic in the cutoff", len(filtered) <= len(recent),
+               f"{len(filtered)} <= {len(recent)}")
+          gate("every result predates the cutoff",
+               all(s < f"{CUTOFF:{STAMP}}" for s in filtered),
+               f"max {max(filtered) if filtered else '-'}")
+          gate("the list arrives newest-first",
+               unfiltered == sorted(unfiltered, reverse=True))
+          if len(filtered) > 50:
+              gate("--paginate follows the filtered set past page one",
+                   len(filtered) > 50, f"{len(filtered)} > 50")
+          else:
+              print(f"SKIP  pagination gate: filtered set is one page ({len(filtered)})")
+
+          if failures:
+              raise SystemExit(f"{len(failures)} gate(s) failed: {failures}")
+          print("all gates passed")
