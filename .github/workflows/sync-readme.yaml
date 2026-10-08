@@ -1,0 +1,72 @@
+---
+name: 🔄 Sync readme
+"on":
+  workflow_dispatch:
+  # Every three months: the About page of the blog changes a few times a year, and a late copy costs nothing.
+  # Run the workflow by hand to get a change sooner.
+  schedule:
+    - cron: "37 4 1 */3 *"
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Supply-chain cooldown: no package published within the window can be resolved by any command in this workflow.
+# Held equal to `[tool.repomatic] minimum-release-age`, which is the default of one week here.
+env:
+  NPM_CONFIG_MIN_RELEASE_AGE: 7
+  UV_EXCLUDE_NEWER: "1 week"
+
+jobs:
+
+  sync-readme:
+    name: Copy the About page of the blog
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The pull request is opened with this token, and one opened with the default token triggers no
+          # `pull_request` workflow: the linters would never run on the copy.
+          token: ${{ secrets.REPOMATIC_PAT || github.token }}
+      # The readme of this repository is a copy of https://kevin.deldycke.com/about, the one place where the bio is
+      # written. The blog owns both the page and the script that turns it into what GitHub renders, so the copy
+      # needs nothing else from that repository. Its default branch is read on purpose: the copy follows the page.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kdeldycke/blog
+          path: blog
+          persist-credentials: false
+          sparse-checkout: |
+            content/pages/about.md
+            scripts/github_readme.py
+          sparse-checkout-cone-mode: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"
+      # See scripts/github_readme.py in kdeldycke/blog for what the copy changes and why.
+      - name: Render the readme
+        run: >
+          uv --no-progress run --script blog/scripts/github_readme.py
+          --output readme.md
+      # `pr-sync` opens the pull request when the page moved, refreshes it on the next run, and does nothing when the
+      # copy is the same. `--add-path` keeps the checkout of the blog out of the commit.
+      # The pin must equal the `uses:` refs of the thin callers, which lint-repo enforces, and repomatic skips the
+      # cooldown the same way those reusable workflows do.
+      - name: Sync pull request
+        env:
+          GH_TOKEN: ${{ secrets.REPOMATIC_PAT || github.token }}
+        run: >
+          uvx --no-progress --exclude-newer-package repomatic=P0D 'repomatic==7.13.0'
+          pr-sync
+          --branch sync-readme
+          --title "Sync the readme with the About page of the blog"
+          --body "The About page of the blog changed, and this readme is its copy.
+          Edit the page in kdeldycke/blog, not this file."
+          --commit-message "Sync the readme with the About page of the blog"
+          --add-path readme.md
