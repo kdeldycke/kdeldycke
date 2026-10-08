@@ -18,18 +18,13 @@ The most relevant experience was in [growing a team from 0 to 12](https://kevin.
 
 ## Achievements
 
-- 💰 Designed, implemented and operated [Scaleway's billing
-  pipeline](https://web.archive.org/web/20190315172559/https://scaleway.com/faq/billing/), generating
-  multi-million dollars of revenue (and growing!). The whole
-  thing. All by myself.
+- 💰 Designed, implemented and operated [Scaleway's billing pipeline](https://web.archive.org/web/20190315172559/https://scaleway.com/faq/billing/), generating multi-million dollars of revenue (and growing!). The whole thing. All by myself.
 
 - 🚀 Then I built a team of 12 people to enhance and expand on the full Billing, Payment and IAM domain of the company. In doing so, I was given the fancy title of Product Manager, then VP.
 
 - 🤝 Established lasting trust and loyalty. No one from my team resigned under my authority, in a company with a very high employee turnover rate.
 
-- 🥇 [World trending GitHub
-  developer](https://kevin.deldycke.com/2017/github-top-developer), and [top-1% open-source
-  developer](https://kevin.deldycke.com/2011/top-1-percent-open-source-developer).
+- 🥇 [World trending GitHub developer](https://kevin.deldycke.com/2017/github-top-developer), and [top-1% open-source developer](https://kevin.deldycke.com/2011/top-1-percent-open-source-developer).
 
 - 🌟 [35,000+ GitHub stars](https://gitstar-ranking.com/kdeldycke). The most popular repository being the [Falsehoods Programmers Believe in](https://github.com/kdeldycke/awesome-falsehood). It is regularly [featured in popular media](https://kevin.deldycke.com/in-the-media).
 
@@ -37,9 +32,7 @@ The most relevant experience was in [growing a team from 0 to 12](https://kevin.
 
   ![Star history of my software projects](https://kevin.deldycke.com/star-history-projects.svg)
 
-- 💵 Wrote the [best open-source
-  payroll](https://kevin.deldycke.com/2008/best-open-source-payroll-software)
-  software in the world.
+- 💵 Wrote the [best open-source payroll](https://kevin.deldycke.com/2008/best-open-source-payroll-software) software in the world.
 
 - 🌐 Created and managed the African subsidiary of my first employer.
 
@@ -53,8 +46,7 @@ The most relevant experience was in [growing a team from 0 to 12](https://kevin.
 
 - 🧘‍♂️ [Bien-être au travail](https://putaindecode.io/podcasts/s01e09-dotjs-react-native-bien-etre-au-travail) (Putain de code, S01E09, 2018) - I was invited in this French podcast to discuss well-being at work. Sounds dull, but it was a great opportunity for the hosts to share their personal anecdotes and stories on the job, and for me to comment on my first few months as a rookie manager.
 
-- 🤿 [Take a Plunge Into One of the World's Deepest Indoor Swimming Pool](https://venuereport.com/blog/take-a-plunge-into-one-of-the-world-s-deepest-indoor-swimming-pool/) (The Venue
-  Report, 2017) - A quick recap on how I entered the world of scuba diving, following by my experience at *Nemo 33*.
+- 🤿 [Take a Plunge Into One of the World's Deepest Indoor Swimming Pool](https://venuereport.com/blog/take-a-plunge-into-one-of-the-world-s-deepest-indoor-swimming-pool/) (The Venue Report, 2017) - A quick recap on how I entered the world of scuba diving, following by my experience at *Nemo 33*.
 
 - 🤘 [Paroles d’Artistes: Cool Cavemen](https://web.archive.org/web/20100715003245/https://www.oxyradio.net/podcast-121.html) (OxyRadio, 2009) - On this French webradio, I explained how and why I came to advise the Cool Cavemen band to release all their music under a Creative Commons license.
 
