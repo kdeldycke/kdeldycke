@@ -62,7 +62,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REPOMATIC_PAT || github.token }}
         run: >
-          uvx --no-progress --exclude-newer-package repomatic=P0D 'repomatic==7.13.0'
+          uvx --no-progress --exclude-newer-package repomatic=P0D 'repomatic==8.4.0'
           pr-sync
           --branch sync-readme
           --title "Sync the readme with the About page of the blog"

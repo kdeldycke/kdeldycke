@@ -21,7 +21,7 @@ name: 🔕 Unsubscribe closed threads
 jobs:
 
   unsubscribe:
-    uses: kdeldycke/repomatic/.github/workflows/unsubscribe.yaml@v7.15.1
+    uses: kdeldycke/repomatic/.github/workflows/unsubscribe.yaml@bd2c4f5898d747b8060e4b621cf7e3d24f7023ab # v8.4.0
     with:
       months: ${{ inputs.months }}
       max-unsubscribes: ${{ inputs.max-unsubscribes }}
