@@ -34,28 +34,18 @@ jobs:
           # The pull request is opened with this token, and one opened with the default token triggers no
           # `pull_request` workflow: the linters would never run on the copy.
           token: ${{ secrets.REPOMATIC_PAT || github.token }}
-      # The readme of this repository is a copy of https://kevin.deldycke.com/about, the one place where the bio is
-      # written. The blog owns both the page and the script that turns it into what GitHub renders, so the copy
-      # needs nothing else from that repository. Its default branch is read on purpose: the copy follows the page.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: kdeldycke/blog
-          path: blog
-          persist-credentials: false
-          sparse-checkout: |
-            content/pages/about.md
-            scripts/github_readme.py
-          sparse-checkout-cone-mode: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version: "0.12.17"
-      # See scripts/github_readme.py in kdeldycke/blog for what the copy changes and why.
+      # The readme of this repository is a copy of https://kevin.deldycke.com/about, the one place where the bio is
+      # written. Each deploy of the blog publishes the Markdown of that page, and the script downloads it, so the
+      # copy follows the live page. See .github/render_readme.py for what the copy changes and why.
       - name: Render the readme
         run: >
-          uv --no-progress run --script blog/scripts/github_readme.py
+          uv --no-progress run --script .github/render_readme.py
           --output readme.md
       # `pr-sync` opens the pull request when the page moved, refreshes it on the next run, and does nothing when the
-      # copy is the same. `--add-path` keeps the checkout of the blog out of the commit.
+      # copy is the same. `--add-path` limits the commit to the readme.
       # The pin must equal the `uses:` refs of the thin callers, which lint-repo enforces, and repomatic skips the
       # cooldown the same way those reusable workflows do.
       - name: Sync pull request

@@ -1,4 +1,4 @@
-<!-- Copy of https://kevin.deldycke.com/about, written by scripts/github_readme.py of kdeldycke/blog. Edit content/pages/about.md there: a job of this repository overwrites this file. -->
+<!-- Copy of https://kevin.deldycke.com/about, written by .github/render_readme.py. Edit content/pages/about.md of kdeldycke/blog: a job of this repository overwrites this file. -->
 
 <img align="right" src="https://kevin.deldycke.com/stats.svg" alt="GitHub statistics card: my rank among all accounts, then the totals of stars earned, commits of the last year, pull requests, issues and repositories I contributed to">
 
