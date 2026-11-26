@@ -11,12 +11,15 @@ second text to maintain. Change the bio in `content/pages/about.md` of `kdeldyck
 the `sync-readme` job overwrites this readme.
 
 Each deploy of the blog publishes the Markdown of each page next to the page. In that
-copy, the blog has replaced each Pelican marker by an address on the live site, and has
-written each image with layout classes as an `<img>` tag, the one form that GitHub can
-float. So this script needs no checkout of the blog. It changes the copy in three ways:
+copy, the blog has replaced each Pelican marker by an address on the live site, so this
+script needs no checkout of the blog. The copy keeps the MyST syntax of the page: this
+script translates the attribute list of an image, and any other MyST syntax reaches the
+readme as written. It changes the copy in four ways:
 
 - The front matter goes: GitHub would draw it as a table.
 - The section about the site stays out: it speaks of the blog, not of its author.
+- An image with an attribute list becomes an `<img>` tag. GitHub shows the attribute
+  list as text, and the `align` attribute is the one way to float an image on GitHub.
 - A comment at the top says where the text comes from.
 """
 
@@ -26,6 +29,7 @@ import argparse
 import re
 import sys
 import urllib.request
+from html import escape
 from pathlib import Path
 
 SITE = "https://kevin.deldycke.com"
@@ -49,8 +53,47 @@ NOTICE = (
 
 FRONT_MATTER = re.compile(r"\A---\n.*?\n---\n", re.DOTALL)
 HEADING = re.compile(r"(#+) +(.+?) *$")
+
+IMAGE_ALIGNMENTS = {
+    "float-end": "right",
+    "float-left": "left",
+    "float-right": "right",
+    "float-start": "left",
+}
+"""The `align` attribute for each Bootstrap class that floats an image, in its old and
+its new spelling."""
+
+IMAGE_WIDTHS = {"w-25": "25%", "w-50": "50%", "w-75": "75%", "w-100": "100%"}
+"""The `width` attribute for each Bootstrap class that sizes an image."""
+
+IMAGE_WITH_ATTRIBUTES = re.compile(
+    r"!\[(?P<alt>[^\]]*)\]\((?P<target>[^)\s]+)\)\{(?P<attributes>[^}\n]*)\}"
+)
+"""An image followed by an attribute list, the MyST syntax that gives it classes."""
+
 MARKER = re.compile(r"[{|](?:attach|author|category|filename|index|static|tag)[}|]")
 """A Pelican marker, in either delimiter style, that the blog left in the copy."""
+
+
+def _laid_out_image(match: re.Match[str]) -> str:
+    """Write an image with an attribute list in the form that GitHub lays out.
+
+    Only the layout classes have an HTML equivalent: the rest of the list goes.
+    """
+    classes = match["attributes"].replace(".", " ").split()
+    layout = [
+        *(
+            f'align="{IMAGE_ALIGNMENTS[name]}"'
+            for name in classes
+            if name in IMAGE_ALIGNMENTS
+        ),
+        *(f'width="{IMAGE_WIDTHS[name]}"' for name in classes if name in IMAGE_WIDTHS),
+    ]
+    if not layout:
+        return f"![{match['alt']}]({match['target']})"
+    source = escape(match["target"], quote=True)
+    alt = escape(match["alt"], quote=True)
+    return f'<img {" ".join(layout)} src="{source}" alt="{alt}">'
 
 
 def _without_skipped_sections(text: str) -> str:
@@ -91,6 +134,7 @@ def render(page: str) -> str:
     text = _without_skipped_sections(text)
     if MARKER.search(text):
         raise ValueError("The copy keeps a Pelican marker.")
+    text = IMAGE_WITH_ATTRIBUTES.sub(_laid_out_image, text)
     # The formatter of this repository keeps one blank line between two blocks: writing
     # the same here leaves it nothing to change in the copy.
     text = re.sub(r"\n{3,}", "\n\n", text).strip("\n")
