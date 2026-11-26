@@ -34,7 +34,7 @@ jobs:
           # The pull request is opened with this token, and one opened with the default token triggers no
           # `pull_request` workflow: the linters would never run on the copy.
           token: ${{ secrets.REPOMATIC_PAT || github.token }}
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: "0.12.17"
       # The readme of this repository is a copy of https://kevin.deldycke.com/about, the one place where the bio is
